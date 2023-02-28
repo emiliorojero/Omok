@@ -12,10 +12,10 @@ public class omok {
         int mode = console.scanMode(); //scanning game mode
         Game match = new Game(mode, console, strat); //creates game
         boolean victory = false;
+        console.printBoard(table);
         for(int i = 0; i <= 625; i += 2){
             for(var p: match.players){
                 int[]x;
-                System.out.println("player: " + p.getPlayerNumber());
                 if(mode == 1 || p.getPlayerNumber() == 1)
                     console.askCoordinates();
                 x = p.createMove();
@@ -24,12 +24,11 @@ public class omok {
                     return;
                 }
                 while (!(board.validMovement(x[0], x[1], p.getPlayerNumber()))) {
-                    System.out.println("segunda impresion player: " + p.getPlayerNumber());
                     console.invalidInput();
                     x = p.createMove();
                 }
                 console.printBoard(table);
-                if(board.hasWon(x[0], x[1],p.getPlayerNumber())){
+                if(board.hasWon(x[0], x[1],p.getPlayerNumber(), 5)){
                     victory = true;
                     console.victoryMessage(p.getPlayerNumber());
                     break;
@@ -91,6 +90,7 @@ class Console{
      */
     public void victoryMessage(int playerNumber){
         System.out.println("\nCONGRATULATIONS PLAYER " + playerNumber + " YOU WON!!!");
+
     }
 
     /**Prompts the user to type the next coordinates he/she wants to play.
@@ -135,6 +135,7 @@ class Console{
             }
             System.out.println();
         }
+        System.out.println();
     }
 }
 class Game{
@@ -187,16 +188,35 @@ class AI extends Player{
     public int getPlayerNumber(){ return playerNumber; }
 }
 
-//abstract class Strategy{
-//    abstract int[] makeMove();
-//}
 class SmartStrategy{
     private Board board;
     public SmartStrategy(Board board){
         this.board = board;
-    }
+    } //wasn't able to finish it
     public int[] makeMove(){
-        int[] last = board.getPrevPlayer1Mov();
+        int[] last = board.getPrevPlayer2Mov();
+        int[] ans = {-1,-1};
+
+        if(board.hasWon(last[0], last[1], 2, 4)) {
+            ans = board.location(last[0], last[1], 1, 0, 2, 4);
+            if(ans[0] != -1)
+                return ans;
+        }
+        last = board.getPrevPlayer1Mov();
+        if(board.hasWon(last[0], last[1], 1, 4)) {
+            ans = board.location(last[0], last[1], 1, 0, 1, 4);
+            if(ans[0] != -1)
+                return ans;
+            ans = board.location(last[0], last[1], 0, 1, 1, 4);
+            if(ans[0] != -1)
+                return ans;
+            ans = board.location(last[0], last[1], 1, 1, 1, 4);
+            if(ans[0] != -1)
+                return ans;
+            ans = board.location(last[0], last[1], 1, -1, 1, 4);
+            if(ans[0] != -1)
+                return ans;
+        }
         int[] adjacent = {last[0] - 1, last[1] - 1, last[0], last[1] - 1, last[0] + 1, last[1] - 1, last[0] - 1, last[1], last[0] + 1, last[1], last[0] - 1, last[1] + 1, last[0], last[1] + 1, last[0] + 1, last[1] + 1};
         int[] checking = new int[2];
         int[] checkOpposite = new int[2];
@@ -216,34 +236,7 @@ class SmartStrategy{
                 }
             }
         }
-        last = board.getPrevPlayer2Mov();
-        for(int i = 0; i < 16; i+= 2){
-            checking[0] = adjacent[i];
-            checking[1] = adjacent[i + 1];
-            checkOpposite[0] = adjacent[15 - i - 1];
-            checkOpposite[1] = adjacent[15 - i];
-            if(checkOpposite[0] < 0 || checkOpposite[1] < 0 || checkOpposite[0] >= 15 || checkOpposite[1] >= 15 || checking[0] < 0 || checking[1] < 0 || checking[0] >= 15 || checking[1] >= 15)
-                continue;
-            if(board.table[checking[0]][checking[1]] == 2) {
-                if (board.table[checkOpposite[0]][checkOpposite[1]] == 0) {
-                    move[0] = checkOpposite[0];
-                    move[1] = checkOpposite[1];
-                    return move;
-                }
-            }
-        }
-        System.out.println("esto " + last[0] + " , " + last[1]);
-        for(int i = 0; i < 16; i+= 2){
-            checkOpposite[0] = adjacent[15 - i - 1];
-            checkOpposite[1] = adjacent[15 - i];
-            if(checkOpposite[0] < 0 || checkOpposite[1] < 0 || checkOpposite[0] >= 15 || checkOpposite[1] >= 15)
-                continue;
-            if (board.table[checkOpposite[0]][checkOpposite[1]] == 0) {
-                move[0] = checkOpposite[0];
-                move[1] = checkOpposite[1];
-                return move;
-            }
-        }
+
         Random rand = new Random();
         int[] x = {rand.nextInt(15), rand.nextInt(15)};
         return x;
@@ -275,11 +268,11 @@ class Board {
     public int[] getPrevPlayer1Mov(){ return prevPlayer1Mov; }
     public int[] getPrevPlayer2Mov(){ return prevPlayer2Mov; }
 
-    public boolean hasWon(int x, int y, int player){
-        if(helper(x, y, 1, 0, player) >= 5) { return true;}
-        if(helper(x, y, 0, 1, player) >= 5) { return true;}
-        if(helper(x, y, 1, 1, player) >= 5) { return true;}
-        if(helper(x, y, 1, -1, player) >= 5) { return true;}
+    public boolean hasWon(int x, int y, int player, int sec){
+        if(helper(x, y, 1, 0, player) >= sec) { return true;}
+        if(helper(x, y, 0, 1, player) >= sec) { return true;}
+        if(helper(x, y, 1, 1, player) >= sec) { return true;}
+        if(helper(x, y, 1, -1, player) >= sec) { return true;}
         return false;
     }
     private int helper(int x, int y, int dx, int dy, int player){
@@ -305,6 +298,46 @@ class Board {
                 break;
         }
         return count;
+    }
+    public int[] location(int x, int y, int dx, int dy, int player, int sec){
+        int count = 0;
+        int initX = x;
+        int initY = y;
+        int[] ans = {-1, -1};
+        while(table[x][y] == player) {
+            count++;
+            x += dx;
+            y += dy;
+            if(x < 0 || y < 0 || x > 14 || y > 14)
+                break;
+        }
+        int[] otherEnd = {-1,-1};
+        if(table[x][y] == 0) {
+            otherEnd[0] = x;
+            otherEnd[y] = y;
+        }
+        if (count == sec)
+            return otherEnd;
+        x = initX - dx;
+        y = initY - dy;
+        if(x < 0 || y < 0 || x > 14 || y > 14)
+            return ans;
+        while(table[x][y] == player){
+            x -= dx;
+            y -= dy;
+            if(x < 0 || y < 0 || x > 14 || y > 14)
+                break;
+            count++;
+        }
+        if(table[x][y] == 0 && count >= sec) {
+            ans[0] = x;
+            ans[1] = y;
+            return ans;
+        }
+        if(otherEnd[0] != -1)
+            return otherEnd;
+
+        return ans;
     }
 }
 
